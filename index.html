@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code Generator // qr-code-generator.slippylabs.com</title>
+<meta name="description" content="Turn text or a URL into a scannable QR code with a hand-built in-browser encoder. Runs entirely in your browser, PNG download included.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2234%22%20r%3D%2222%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2216%22%20r%3D%228%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2244%22%20cy%3D%2216%22%20r%3D%228%22%20fill%3D%22%231c8a52%22%20stroke%3D%22%2339ff8f%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E">
+<meta name="theme-color" content="#050b10">
+<link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+
+<div class="starfield"></div>
+<div class="scanlines"></div>
+
+<main class="page-wrap">
+  <div class="hud-panel wide">
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <div class="callsign-row">
+      <div class="toad-avatar-wrap">
+        <svg class="toad-avatar" width="46" height="46" viewBox="0 0 64 64">
+          <circle cx="32" cy="34" r="22" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="44" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="3.5" fill="#050b10"/>
+          <circle cx="44" cy="16" r="3.5" fill="#050b10"/>
+          <ellipse cx="24" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <ellipse cx="40" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <circle cx="24" cy="30" r="1.4" fill="#39ff8f"/>
+          <circle cx="40" cy="30" r="1.4" fill="#39ff8f"/>
+          <path d="M22 42 Q32 48 42 42" stroke="#050b10" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+        <div class="lock-reticle"></div>
+      </div>
+      <span class="callsign">Workshop Division // Tool</span>
+      <div class="nav-links">
+        <a href="https://projects.slippylabs.com/" class="logout-link">← Archive</a>
+      </div>
+    </div>
+
+    <h1>QR CODE GENERATOR</h1>
+    <p class="subtitle">Type text or a URL and a scannable QR code appears instantly. Hand-built encoder, nothing uploaded.</p>
+
+    <div class="filter-bar" id="mode-tabs">
+      <button class="hud-tab active" data-mode="text">Text / URL</button>
+      <button class="hud-tab" data-mode="wifi">WiFi Network</button>
+    </div>
+
+    <div id="text-panel">
+      <div class="tool-field-row">
+        <label class="tool-field-label" for="qr-text">Text or URL</label>
+        <textarea class="tool-textarea" id="qr-text" spellcheck="false" placeholder="https://slippylabs.com" style="min-height:90px;">https://slippylabs.com</textarea>
+      </div>
+    </div>
+
+    <div id="wifi-panel" class="hidden">
+      <div class="tool-field-row">
+        <label class="tool-field-label" for="wifi-ssid">Network Name (SSID)</label>
+        <input class="tool-text-input" id="wifi-ssid" type="text" placeholder="My Wi-Fi Network" autocomplete="off">
+      </div>
+
+      <div class="tool-dim-row">
+        <div class="tool-field-row">
+          <label class="tool-field-label" for="wifi-security">Security</label>
+          <select class="tool-select" id="wifi-security">
+            <option value="WPA" selected>WPA/WPA2</option>
+            <option value="WEP">WEP</option>
+            <option value="nopass">None (open)</option>
+          </select>
+        </div>
+        <div class="tool-field-row">
+          <label class="tool-field-label" for="wifi-password">Password</label>
+          <input class="tool-text-input" id="wifi-password" type="password" placeholder="Password" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="tool-checks">
+        <label class="tool-check"><input type="checkbox" id="wifi-show-password"> Show password</label>
+        <label class="tool-check"><input type="checkbox" id="wifi-hidden"> Hidden network</label>
+      </div>
+    </div>
+
+    <div class="tool-dim-row">
+      <div class="tool-field-row">
+        <label class="tool-field-label" for="ec-select">Error Correction</label>
+        <select class="tool-select" id="ec-select">
+          <option value="L">L — Low (~7%)</option>
+          <option value="M" selected>M — Medium (~15%)</option>
+          <option value="Q">Q — Quartile (~25%)</option>
+          <option value="H">H — High (~30%)</option>
+        </select>
+      </div>
+      <div class="tool-field-row">
+        <label class="tool-field-label" for="scale-select">Module Size</label>
+        <select class="tool-select" id="scale-select">
+          <option value="4">Small</option>
+          <option value="8" selected>Medium</option>
+          <option value="12">Large</option>
+        </select>
+      </div>
+    </div>
+
+    <p class="tool-output error-text" id="qr-error" style="display:none;"></p>
+
+    <div class="canvas-frame">
+      <canvas id="qr-canvas"></canvas>
+    </div>
+
+    <div class="tool-controls">
+      <span class="tool-note" id="qr-info" style="margin:0;"></span>
+      <button class="tool-btn ghost" id="download-btn" style="margin-left:auto;">Download PNG</button>
+    </div>
+
+    <div class="comm-window">
+      <div class="comm-portrait">
+        <svg width="36" height="36" viewBox="0 0 64 64">
+          <circle cx="32" cy="34" r="22" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="44" cy="16" r="8" fill="#1c8a52" stroke="#39ff8f" stroke-width="2"/>
+          <circle cx="20" cy="16" r="3.5" fill="#050b10"/>
+          <circle cx="44" cy="16" r="3.5" fill="#050b10"/>
+          <ellipse cx="24" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <ellipse cx="40" cy="32" rx="4.5" ry="5.5" fill="#050b10"/>
+          <circle cx="24" cy="30" r="1.4" fill="#39ff8f"/>
+          <circle cx="40" cy="30" r="1.4" fill="#39ff8f"/>
+          <path d="M22 42 Q32 48 42 42" stroke="#050b10" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="comm-body">
+        <div class="comm-label"><span class="dot"></span> Incoming Transmission &mdash; Slippy</div>
+        <p>"Reed-Solomon and all — every module is placed right here in your tab."</p>
+      </div>
+    </div>
+
+    <a href="https://projects.slippylabs.com/" class="hud-btn">← Back to Archive</a>
+  </div>
+</main>
+
+<script>
+// ---------- QR code encoder (versions 1-10, byte mode, EC levels L/M/Q/H) ----------
+const TOTAL_CODEWORDS = [null, 26, 44, 70, 100, 134, 172, 196, 242, 292, 346];
+
+const EC_TABLE = {
+  1: { L: [7, 1, 19, 0, 0], M: [10, 1, 16, 0, 0], Q: [13, 1, 13, 0, 0], H: [17, 1, 9, 0, 0] },
+  2: { L: [10, 1, 34, 0, 0], M: [16, 1, 28, 0, 0], Q: [22, 1, 22, 0, 0], H: [28, 1, 16, 0, 0] },
+  3: { L: [15, 1, 55, 0, 0], M: [26, 1, 44, 0, 0], Q: [18, 2, 17, 0, 0], H: [22, 2, 13, 0, 0] },
+  4: { L: [20, 1, 80, 0, 0], M: [18, 2, 32, 0, 0], Q: [26, 2, 24, 0, 0], H: [16, 4, 9, 0, 0] },
+  5: { L: [26, 1, 108, 0, 0], M: [24, 2, 43, 0, 0], Q: [18, 2, 15, 2, 16], H: [22, 2, 11, 2, 12] },
+  6: { L: [18, 2, 68, 0, 0], M: [16, 4, 27, 0, 0], Q: [24, 4, 19, 0, 0], H: [28, 4, 15, 0, 0] },
+  7: { L: [20, 2, 78, 0, 0], M: [18, 4, 31, 0, 0], Q: [18, 2, 14, 4, 15], H: [26, 4, 13, 1, 14] },
+  8: { L: [24, 2, 97, 0, 0], M: [22, 2, 38, 2, 39], Q: [22, 4, 18, 2, 19], H: [26, 4, 14, 2, 15] },
+  9: { L: [30, 2, 116, 0, 0], M: [22, 3, 36, 2, 37], Q: [20, 4, 16, 4, 17], H: [24, 4, 12, 4, 13] },
+  10: { L: [18, 2, 68, 2, 69], M: [26, 4, 43, 1, 44], Q: [24, 6, 19, 2, 20], H: [28, 6, 15, 2, 16] },
+};
+
+const ALIGNMENT_POSITIONS = {
+  1: [], 2: [6, 18], 3: [6, 22], 4: [6, 26], 5: [6, 30], 6: [6, 34],
+  7: [6, 22, 38], 8: [6, 24, 42], 9: [6, 26, 46], 10: [6, 28, 50],
+};
+
+const REMAINDER_BITS = { 1: 0, 2: 7, 3: 7, 4: 7, 5: 7, 6: 7, 7: 0, 8: 0, 9: 0, 10: 0 };
+const FORMAT_LEVEL_BITS = { L: 0b01, M: 0b00, Q: 0b11, H: 0b10 };
+
+// GF(256) arithmetic — QR field: primitive poly 0x11D, generator 2
+const GF_EXP = new Array(512).fill(0);
+const GF_LOG = new Array(256).fill(0);
+(function initGF() {
+  let x = 1;
+  for (let i = 0; i < 255; i++) {
+    GF_EXP[i] = x;
+    GF_LOG[x] = i;
+    x <<= 1;
+    if (x & 0x100) x ^= 0x11D;
+  }
+  for (let i = 255; i < 512; i++) GF_EXP[i] = GF_EXP[i - 255];
+})();
+
+function gfMul(a, b) {
+  if (a === 0 || b === 0) return 0;
+  return GF_EXP[GF_LOG[a] + GF_LOG[b]];
+}
+
+function rsGeneratorPoly(degree) {
+  let poly = [1];
+  for (let i = 0; i < degree; i++) {
+    const newPoly = new Array(poly.length + 1).fill(0);
+    for (let j = 0; j < poly.length; j++) {
+      newPoly[j] ^= poly[j];
+      newPoly[j + 1] ^= gfMul(poly[j], GF_EXP[i]);
+    }
+    poly = newPoly;
+  }
+  return poly;
+}
+
+function rsEncode(data, ecCount) {
+  const gen = rsGeneratorPoly(ecCount);
+  const msg = data.concat(new Array(ecCount).fill(0));
+  for (let i = 0; i < data.length; i++) {
+    const coef = msg[i];
+    if (coef === 0) continue;
+    for (let j = 0; j < gen.length; j++) {
+      msg[i + j] ^= gfMul(gen[j], coef);
+    }
+  }
+  return msg.slice(data.length);
+}
+
+class BitStream {
+  constructor() { this.bits = []; }
+  put(value, length) {
+    for (let i = length - 1; i >= 0; i--) this.bits.push((value >> i) & 1);
+  }
+  get length() { return this.bits.length; }
+}
+
+function bchRemainder(data, generator, bits) {
+  let rem = data;
+  for (let i = 0; i < bits; i++) {
+    rem = (rem << 1) ^ ((rem >> (bits - 1)) * generator);
+  }
+  return rem & ((1 << bits) - 1);
+}
+
+class QRTooLongError extends Error {}
+
+function encodeQRMatrix(text, level) {
+  const dataBytes = Array.from(new TextEncoder().encode(text));
+
+  let version = null;
+  let dataCodewordsCount = null;
+  for (let v = 1; v <= 10; v++) {
+    const [, g1n, g1c, g2n, g2c] = EC_TABLE[v][level];
+    const dataCodewords = g1n * g1c + g2n * g2c;
+    const cciBits = v <= 9 ? 8 : 16;
+    const bs = new BitStream();
+    bs.put(0b0100, 4);
+    bs.put(dataBytes.length, cciBits);
+    for (const b of dataBytes) bs.put(b, 8);
+    if (bs.length <= dataCodewords * 8) {
+      version = v;
+      dataCodewordsCount = dataCodewords;
+      break;
+    }
+  }
+  if (version === null) {
+    throw new QRTooLongError('Text is too long to encode (max supported is QR version 10).');
+  }
+
+  const [ec, g1n, g1c, g2n, g2c] = EC_TABLE[version][level];
+  const cciBits = version <= 9 ? 8 : 16;
+  const bs = new BitStream();
+  bs.put(0b0100, 4);
+  bs.put(dataBytes.length, cciBits);
+  for (const b of dataBytes) bs.put(b, 8);
+
+  const capacityBits = dataCodewordsCount * 8;
+  const terminatorLen = Math.min(4, capacityBits - bs.length);
+  bs.put(0, terminatorLen);
+  while (bs.length % 8 !== 0) bs.bits.push(0);
+
+  const codewords = [];
+  for (let i = 0; i < bs.bits.length; i += 8) {
+    let byte = 0;
+    for (let j = i; j < i + 8; j++) byte = (byte << 1) | bs.bits[j];
+    codewords.push(byte);
+  }
+
+  const padBytes = [0xEC, 0x11];
+  let pi = 0;
+  while (codewords.length < dataCodewordsCount) {
+    codewords.push(padBytes[pi % 2]);
+    pi++;
+  }
+
+  const blocks = [];
+  let idx = 0;
+  for (let i = 0; i < g1n; i++) { blocks.push(codewords.slice(idx, idx + g1c)); idx += g1c; }
+  for (let i = 0; i < g2n; i++) { blocks.push(codewords.slice(idx, idx + g2c)); idx += g2c; }
+
+  const ecBlocks = blocks.map(block => rsEncode(block, ec));
+
+  const finalData = [];
+  const maxLen = Math.max(...blocks.map(b => b.length));
+  for (let i = 0; i < maxLen; i++) {
+    for (const b of blocks) if (i < b.length) finalData.push(b[i]);
+  }
+  const finalEc = [];
+  for (let i = 0; i < ec; i++) {
+    for (const b of ecBlocks) finalEc.push(b[i]);
+  }
+
+  const finalCodewords = finalData.concat(finalEc);
+  const finalBits = [];
+  for (const cw of finalCodewords) {
+    for (let i = 7; i >= 0; i--) finalBits.push((cw >> i) & 1);
+  }
+  for (let i = 0; i < REMAINDER_BITS[version]; i++) finalBits.push(0);
+
+  const size = 4 * version + 17;
+  const matrix = Array.from({ length: size }, () => new Array(size).fill(null));
+  const isFunction = Array.from({ length: size }, () => new Array(size).fill(false));
+
+  function setModule(r, c, val) {
+    matrix[r][c] = val;
+    isFunction[r][c] = true;
+  }
+
+  function placeFinder(fr, fc) {
+    for (let dr = -1; dr <= 7; dr++) {
+      for (let dc = -1; dc <= 7; dc++) {
+        const rr = fr + dr, cc = fc + dc;
+        if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
+        let val;
+        if (dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6) {
+          const onBorder = dr === 0 || dr === 6 || dc === 0 || dc === 6;
+          const inner = dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4;
+          val = onBorder || inner;
+        } else {
+          val = false;
+        }
+        setModule(rr, cc, val);
+      }
+    }
+  }
+
+  placeFinder(0, 0);
+  placeFinder(0, size - 7);
+  placeFinder(size - 7, 0);
+
+  for (let i = 8; i < size - 8; i++) {
+    const val = i % 2 === 0;
+    setModule(6, i, val);
+    setModule(i, 6, val);
+  }
+
+  const positions = ALIGNMENT_POSITIONS[version];
+  const finderZones = [[0, 0], [0, size - 7], [size - 7, 0]];
+  for (const r of positions) {
+    for (const c of positions) {
+      let overlap = false;
+      for (const [fr, fc] of finderZones) {
+        if (r - 2 <= fr + 7 && r + 2 >= fr - 1 && c - 2 <= fc + 7 && c + 2 >= fc - 1) { overlap = true; break; }
+      }
+      if (overlap) continue;
+      for (let dr = -2; dr <= 2; dr++) {
+        for (let dc = -2; dc <= 2; dc++) {
+          const onBorder = dr === -2 || dr === 2 || dc === -2 || dc === 2;
+          const center = dr === 0 && dc === 0;
+          setModule(r + dr, c + dc, onBorder || center);
+        }
+      }
+    }
+  }
+
+  setModule(4 * version + 9, 8, true);
+
+  for (let i = 0; i < 9; i++) {
+    if (!isFunction[8][i]) setModule(8, i, false);
+    if (!isFunction[i][8]) setModule(i, 8, false);
+  }
+  for (let i = size - 8; i < size; i++) setModule(8, i, false);
+  for (let i = size - 7; i < size; i++) setModule(i, 8, false);
+  setModule(8, size - 8, true);
+
+  if (version >= 7) {
+    for (let r = 0; r < 6; r++) {
+      for (let c = size - 11; c < size - 8; c++) {
+        setModule(r, c, false);
+        setModule(c, r, false);
+      }
+    }
+  }
+
+  const dataPositions = [];
+  let col = size - 1;
+  let upward = true;
+  while (col > 0) {
+    if (col === 6) { col -= 1; continue; }
+    const cols = [col, col - 1];
+    const rows = [];
+    if (upward) { for (let r = size - 1; r >= 0; r--) rows.push(r); }
+    else { for (let r = 0; r < size; r++) rows.push(r); }
+    for (const r of rows) {
+      for (const c of cols) {
+        if (!isFunction[r][c]) dataPositions.push([r, c]);
+      }
+    }
+    upward = !upward;
+    col -= 2;
+  }
+
+  for (let i = 0; i < dataPositions.length; i++) {
+    const [r, c] = dataPositions[i];
+    matrix[r][c] = i < finalBits.length ? !!finalBits[i] : false;
+  }
+
+  function maskFn(pattern, r, c) {
+    switch (pattern) {
+      case 0: return (r + c) % 2 === 0;
+      case 1: return r % 2 === 0;
+      case 2: return c % 3 === 0;
+      case 3: return (r + c) % 3 === 0;
+      case 4: return (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0;
+      case 5: return (r * c) % 2 + (r * c) % 3 === 0;
+      case 6: return ((r * c) % 2 + (r * c) % 3) % 2 === 0;
+      case 7: return ((r + c) % 2 + (r * c) % 3) % 2 === 0;
+    }
+  }
+
+  function applyMask(pattern) {
+    const m2 = matrix.map(row => row.slice());
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (!isFunction[r][c] && maskFn(pattern, r, c)) m2[r][c] = !m2[r][c];
+      }
+    }
+    return m2;
+  }
+
+  function penalty(m) {
+    let total = 0;
+    for (let r = 0; r < size; r++) {
+      let run = 1;
+      for (let c = 1; c < size; c++) {
+        if (m[r][c] === m[r][c - 1]) { run++; }
+        else { if (run >= 5) total += run - 2; run = 1; }
+      }
+      if (run >= 5) total += run - 2;
+    }
+    for (let c = 0; c < size; c++) {
+      let run = 1;
+      for (let r = 1; r < size; r++) {
+        if (m[r][c] === m[r - 1][c]) { run++; }
+        else { if (run >= 5) total += run - 2; run = 1; }
+      }
+      if (run >= 5) total += run - 2;
+    }
+    for (let r = 0; r < size - 1; r++) {
+      for (let c = 0; c < size - 1; c++) {
+        const v = m[r][c];
+        if (m[r][c + 1] === v && m[r + 1][c] === v && m[r + 1][c + 1] === v) total += 3;
+      }
+    }
+    const patt1 = [true, false, true, true, true, false, true, false, false, false, false];
+    const patt2 = patt1.slice().reverse();
+    const eq = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c <= size - 11; c++) {
+        const window = m[r].slice(c, c + 11);
+        if (eq(window, patt1) || eq(window, patt2)) total += 40;
+      }
+    }
+    for (let c = 0; c < size; c++) {
+      for (let r = 0; r <= size - 11; r++) {
+        const window = [];
+        for (let rr = r; rr < r + 11; rr++) window.push(m[rr][c]);
+        if (eq(window, patt1) || eq(window, patt2)) total += 40;
+      }
+    }
+    let dark = 0;
+    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (m[r][c]) dark++;
+    const percent = Math.floor((dark * 100) / (size * size));
+    const prev = Math.floor(percent / 5) * 5;
+    const next = prev + 5;
+    total += Math.floor(Math.min(Math.abs(prev - 50), Math.abs(next - 50)) / 5) * 10;
+    return total;
+  }
+
+  let bestPattern = 0, bestPenalty = null, bestMatrix = null;
+  for (let pattern = 0; pattern < 8; pattern++) {
+    const candidate = applyMask(pattern);
+    const p = penalty(candidate);
+    if (bestPenalty === null || p < bestPenalty) { bestPenalty = p; bestPattern = pattern; bestMatrix = candidate; }
+  }
+  let finalMatrix = bestMatrix;
+
+  const fmtData = (FORMAT_LEVEL_BITS[level] << 3) | bestPattern;
+  const fmtRem = bchRemainder(fmtData, 0x537, 10);
+  const fmtBits = ((fmtData << 10) | fmtRem) ^ 0x5412;
+  const fbit = i => (fmtBits >> i) & 1;
+
+  for (let i = 0; i < 6; i++) finalMatrix[8][i] = !!fbit(14 - i);
+  finalMatrix[8][7] = !!fbit(8);
+  finalMatrix[8][8] = !!fbit(7);
+  finalMatrix[7][8] = !!fbit(6);
+  for (let i = 0; i < 6; i++) finalMatrix[i][8] = !!fbit(i);
+  for (let i = 0; i < 8; i++) finalMatrix[8][size - 1 - i] = !!fbit(i);
+  for (let i = 8; i < 15; i++) finalMatrix[size - 15 + i][8] = !!fbit(i);
+
+  if (version >= 7) {
+    const verRem = bchRemainder(version, 0x1F25, 12);
+    const verBits = (version << 12) | verRem;
+    for (let i = 0; i < 18; i++) {
+      const bit = (verBits >> i) & 1;
+      const row = Math.floor(i / 3);
+      const col2 = i % 3;
+      finalMatrix[row][size - 11 + col2] = !!bit;
+      finalMatrix[size - 11 + col2][row] = !!bit;
+    }
+  }
+
+  return { matrix: finalMatrix, version, size };
+}
+
+// ---------- UI ----------
+const qrText = document.getElementById('qr-text');
+const ecSelect = document.getElementById('ec-select');
+const scaleSelect = document.getElementById('scale-select');
+const canvas = document.getElementById('qr-canvas');
+const ctx = canvas.getContext('2d');
+const errorMsg = document.getElementById('qr-error');
+const qrInfo = document.getElementById('qr-info');
+const downloadBtn = document.getElementById('download-btn');
+
+const modeTabs = document.getElementById('mode-tabs');
+const textPanel = document.getElementById('text-panel');
+const wifiPanel = document.getElementById('wifi-panel');
+const wifiSsid = document.getElementById('wifi-ssid');
+const wifiPassword = document.getElementById('wifi-password');
+const wifiSecurity = document.getElementById('wifi-security');
+const wifiHidden = document.getElementById('wifi-hidden');
+const wifiShowPassword = document.getElementById('wifi-show-password');
+
+let currentMode = 'text';
+
+// WiFi QR payload format (the de facto standard used by Android/iOS scanners):
+// WIFI:T:<WPA|WEP|nopass>;S:<ssid>;P:<password>;H:<true|false>;;
+// Backslash must be escaped first, then the other reserved characters, or the
+// escaping backslashes themselves would get double-escaped on a second pass.
+function escapeWifiField(str) {
+  return str.replace(/\\/g, '\\\\').replace(/([;,":])/g, '\\$1');
+}
+
+function buildWifiPayload() {
+  const ssid = wifiSsid.value;
+  const security = wifiSecurity.value;
+  const password = wifiPassword.value;
+  const hidden = wifiHidden.checked;
+  let payload = `WIFI:T:${security};S:${escapeWifiField(ssid)};`;
+  if (security !== 'nopass') payload += `P:${escapeWifiField(password)};`;
+  if (hidden) payload += 'H:true;';
+  payload += ';';
+  return payload;
+}
+
+function getPayloadText() {
+  return currentMode === 'wifi' ? buildWifiPayload() : qrText.value;
+}
+
+modeTabs.addEventListener('click', (e) => {
+  const btn = e.target.closest('.hud-tab');
+  if (!btn) return;
+  modeTabs.querySelectorAll('.hud-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentMode = btn.dataset.mode;
+  textPanel.classList.toggle('hidden', currentMode !== 'text');
+  wifiPanel.classList.toggle('hidden', currentMode !== 'wifi');
+  render();
+});
+
+wifiShowPassword.addEventListener('change', () => {
+  wifiPassword.type = wifiShowPassword.checked ? 'text' : 'password';
+});
+
+[wifiSsid, wifiPassword, wifiSecurity].forEach(el => el.addEventListener('input', render));
+wifiSecurity.addEventListener('change', render);
+wifiHidden.addEventListener('change', render);
+
+function render() {
+  const text = currentMode === 'wifi' ? wifiSsid.value : qrText.value;
+  if (!text) {
+    errorMsg.style.display = 'block';
+    errorMsg.textContent = currentMode === 'wifi'
+      ? 'Enter a network name (SSID) to generate a code.'
+      : 'Type something to generate a code.';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = canvas.height = 0;
+    qrInfo.textContent = '';
+    downloadBtn.disabled = true;
+    return;
+  }
+
+  try {
+    const level = ecSelect.value;
+    const scale = Number(scaleSelect.value);
+    const quiet = 4;
+    const { matrix, version, size } = encodeQRMatrix(getPayloadText(), level);
+
+    const full = size + quiet * 2;
+    canvas.width = full * scale;
+    canvas.height = full * scale;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#000000';
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (matrix[r][c]) {
+          ctx.fillRect((c + quiet) * scale, (r + quiet) * scale, scale, scale);
+        }
+      }
+    }
+
+    errorMsg.style.display = 'none';
+    qrInfo.textContent = `Version ${version} (${size}×${size} modules) · EC level ${level}`;
+    downloadBtn.disabled = false;
+  } catch (err) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.width = canvas.height = 0;
+    qrInfo.textContent = '';
+    downloadBtn.disabled = true;
+    errorMsg.style.display = 'block';
+    errorMsg.textContent = err.message || 'Could not encode this text.';
+  }
+}
+
+downloadBtn.addEventListener('click', () => {
+  if (!canvas.width) return;
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'qrcode.png';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+});
+
+qrText.addEventListener('input', render);
+ecSelect.addEventListener('change', render);
+scaleSelect.addEventListener('change', render);
+
+render();
+</script>
+</body>
+</html>
